@@ -3,5 +3,8 @@ __pycache__/
 .venv/
 .env
 .ipynb_checkpoints/
+analytics/*.joblib
+support_assistant/chroma_db/
+*.sqlite
 *.sqlite-shm
 *.sqlite-wal

@@ -1,0 +1,1 @@
+SELECT DISTINCT rating FROM books ORDER BY rating;
