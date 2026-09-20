@@ -5,5 +5,6 @@ __pycache__/
 .ipynb_checkpoints/
 analytics/*.joblib
 support_assistant/chroma_db/
+*.sqlite
 *.sqlite-shm
 *.sqlite-wal

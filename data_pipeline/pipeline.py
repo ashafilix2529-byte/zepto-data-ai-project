@@ -3,7 +3,7 @@ from pathlib import Path
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-import statistics
+import re
 
 BASE_URL = "https://books.toscrape.com/"
 RATE_GBP_TO_INR = 105.50
@@ -25,7 +25,7 @@ def parse_book(url, category):
     price_text = soup.select_one("div.product_main p.price_color").get_text(strip=True)
     availability = soup.select_one("div.product_main p.instock").get_text(" ", strip=True)
     rating_text = article.select_one("p.star-rating")["class"][1]
-    price = float(price_text.replace("£", "").strip())
+    price = float(re.sub(r"[^0-9.]", "", price_text))
     return {
         "title": title,
         "price_gbp": price,
@@ -138,6 +138,11 @@ def run_queries(con):
 
 def main():
     df = scrape(60)
+    if df.empty:
+        raise RuntimeError(
+        "No books were scraped successfully. Check the scraping/parsing logic."
+    )
+
     print("Scraped rows:", len(df), "categories:", df["category"].nunique())
     if len(df) < 60 or df["category"].nunique() < 3:
         raise RuntimeError("Acceptance criteria not met: need >=60 books across >=3 categories.")
