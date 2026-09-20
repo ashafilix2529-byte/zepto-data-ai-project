@@ -50,19 +50,35 @@ def missing_report(df):
 
 def clean_eda(df):
     df = df.copy()
-    miss = missing_report(df)
-    # Under 5%: drop rows. 5%-30%: median/mode impute.
-    for col, pct in miss.items():
+    missing_pct = df.isna().mean() * 100
+
+    for col in df.columns:
+        pct = missing_pct[col]
+
         if pct < 5:
+            # Under 5%: drop rows
             df = df.dropna(subset=[col])
+
         elif pct <= 30:
+            # 5–30%: impute
             if pd.api.types.is_numeric_dtype(df[col]):
                 df[col] = df[col].fillna(df[col].median())
             else:
-                df[col] = df[col].fillna(df[col].mode(dropna=True)[0])
+                if isinstance(df[col].dtype, pd.CategoricalDtype):
+                    if "missing" not in df[col].cat.categories:
+                        df[col] = df[col].cat.add_categories(["missing"])
+                df[col] = df[col].fillna("missing")
+
         else:
-            # Retain high-missing columns as an explicit "missing" category.
-            df[col] = df[col].fillna("missing") if not pd.api.types.is_numeric_dtype(df[col]) else df[col].fillna(df[col].median())
+            # >30%: encode missing as an explicit category
+            if pd.api.types.is_numeric_dtype(df[col]):
+                df[col] = df[col].fillna(df[col].median())
+            else:
+                if isinstance(df[col].dtype, pd.CategoricalDtype):
+                    if "missing" not in df[col].cat.categories:
+                        df[col] = df[col].cat.add_categories(["missing"])
+                df[col] = df[col].fillna("missing")
+
     return df
 
 
@@ -245,7 +261,7 @@ def regression(df):
     pipe.fit(Xtr,ytr)
     pred=pipe.predict(Xte)
     mae=mean_absolute_error(yte,pred)
-    rmse=mean_squared_error(yte,pred,squared=False)
+    rmse = mean_squared_error(yte, pred) ** 0.5
     r2=r2_score(yte,pred)
     n,p=Xte.shape[0], pipe.named_steps["prep"].transform(Xte).shape[1]
     adj=1-(1-r2)*(n-1)/(n-p-1) if n>p+1 else np.nan
